@@ -4,21 +4,38 @@ import type { Project, Design } from '../types';
 import Header from './Header';
 import PlusIcon from './icons/PlusIcon';
 import UploadIcon from './icons/UploadIcon';
+import CloseIcon from './icons/CloseIcon';
 
 interface ProjectBoardsScreenProps {
   project: Project;
   onSelectDesign: (design: Design) => void;
   onAddDesign: (projectId: string, designName: string, imageUrl: string) => void;
+  onDeleteDesign: (projectId: string, designId: string) => void;
   onBack: () => void;
 }
 
-const DesignCard: React.FC<{design: Design, onSelect: () => void}> = ({ design, onSelect }) => {
+const DesignCard: React.FC<{design: Design, onSelect: () => void, onDelete: () => void}> = ({ design, onSelect, onDelete }) => {
+    
+    const handleDeleteClick = (e: React.MouseEvent) => {
+        e.stopPropagation(); // Prevent onSelect from firing
+        if (window.confirm(`Are you sure you want to delete the design "${design.name}"? This action is permanent.`)) {
+            onDelete();
+        }
+    };
+
     return (
-        <div onClick={onSelect} className="bg-white p-4 border border-gray-200 rounded-lg shadow-sm cursor-pointer hover:shadow-md hover:border-gray-400 transition-all duration-300 group">
+        <div onClick={onSelect} className="relative bg-white p-4 border border-gray-200 rounded-lg shadow-sm cursor-pointer hover:shadow-md hover:border-gray-400 transition-all duration-300 group">
             <div className="aspect-w-4 aspect-h-3 w-full bg-gray-100 rounded-md overflow-hidden">
                 <img src={design.imageUrl} alt={design.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
             </div>
             <h3 className="mt-4 text-md font-semibold text-gray-800">{design.name}</h3>
+            <button
+                onClick={handleDeleteClick}
+                className="absolute top-2 right-2 z-20 p-1 bg-white/70 rounded-full text-gray-500 hover:text-gray-900 hover:bg-white opacity-0 group-hover:opacity-100 transition-opacity"
+                aria-label="Delete design"
+            >
+                <CloseIcon className="w-5 h-5" />
+            </button>
         </div>
     );
 };
@@ -102,7 +119,7 @@ const UploadCard: React.FC<{project: Project, onAddDesign: ProjectBoardsScreenPr
 };
 
 
-const ProjectBoardsScreen: React.FC<ProjectBoardsScreenProps> = ({ project, onSelectDesign, onAddDesign, onBack }) => {
+const ProjectBoardsScreen: React.FC<ProjectBoardsScreenProps> = ({ project, onSelectDesign, onAddDesign, onBack, onDeleteDesign }) => {
   return (
     <div className="min-h-screen bg-gray-50">
       <Header title={`${project.name} Project boards`} />
@@ -110,7 +127,12 @@ const ProjectBoardsScreen: React.FC<ProjectBoardsScreenProps> = ({ project, onSe
         <p className="text-gray-600 mb-8">Click on one of the layouts to add feedback</p>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
           {project.designs.map(design => (
-            <DesignCard key={design.id} design={design} onSelect={() => onSelectDesign(design)} />
+            <DesignCard 
+                key={design.id} 
+                design={design} 
+                onSelect={() => onSelectDesign(design)} 
+                onDelete={() => onDeleteDesign(project.id, design.id)}
+            />
           ))}
           <UploadCard project={project} onAddDesign={onAddDesign} />
         </div>

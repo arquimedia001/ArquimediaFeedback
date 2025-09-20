@@ -1,17 +1,20 @@
+
 import React, { useState } from 'react';
 import type { Project } from '../types';
 import Header from './Header';
 import PlusIcon from './icons/PlusIcon';
 import EyeIcon from './icons/EyeIcon';
 import EyeOffIcon from './icons/EyeOffIcon';
+import TrashIcon from './icons/TrashIcon';
 
 interface ProjectsScreenProps {
   projects: Project[];
   onAddProject: (name: string, password?: string) => void;
   onSelectProject: (project: Project) => void;
+  onDeleteProject: (projectId: string) => void;
 }
 
-const ProjectCard: React.FC<{project: Project, onSelect: () => void}> = ({ project, onSelect }) => {
+const ProjectCard: React.FC<{project: Project, onSelect: () => void, onDelete: () => void}> = ({ project, onSelect, onDelete }) => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
@@ -29,8 +32,28 @@ const ProjectCard: React.FC<{project: Project, onSelect: () => void}> = ({ proje
     setIsPasswordVisible(prev => !prev);
   };
 
+  const handleDeleteClick = (e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent onSelect from firing
+    const adminPassword = prompt("To delete this project, please enter the admin password:");
+    if (adminPassword === "Arquimediano") {
+        if (window.confirm(`Are you sure you want to delete the project "${project.name}"? This action is permanent and cannot be undone.`)) {
+            onDelete();
+        }
+    } else if (adminPassword !== null) { // User didn't click cancel
+        alert("Incorrect password. Deletion cancelled.");
+    }
+  };
+
   return (
-    <div className="bg-white p-6 border border-gray-200 rounded-lg shadow-sm w-full">
+    <div className="bg-white p-6 border border-gray-200 rounded-lg shadow-sm w-full relative group">
+       <button
+        onClick={handleDeleteClick}
+        className="absolute top-2 right-2 z-10 p-1.5 bg-white/70 rounded-full text-gray-500 hover:text-red-600 hover:bg-red-50 opacity-0 group-hover:opacity-100 transition-all"
+        aria-label="Delete project"
+      >
+        <TrashIcon className="w-5 h-5" />
+      </button>
+
       <h3 className="text-xl font-bold text-gray-800">Project: {project.name}</h3>
       <div className="mt-4">
         <label className="block text-sm font-medium text-gray-700">Password</label>
@@ -130,7 +153,7 @@ const CreateProjectCard: React.FC<{onAddProject: (name: string, password?: strin
     );
 };
 
-const ProjectsScreen: React.FC<ProjectsScreenProps> = ({ projects, onAddProject, onSelectProject }) => {
+const ProjectsScreen: React.FC<ProjectsScreenProps> = ({ projects, onAddProject, onSelectProject, onDeleteProject }) => {
   return (
     <div className="min-h-screen bg-gray-50">
       <Header title="PROJECTS" />
@@ -138,7 +161,12 @@ const ProjectsScreen: React.FC<ProjectsScreenProps> = ({ projects, onAddProject,
         <p className="text-gray-600 mb-8">Click on one of the layouts to add feedback</p>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
             {projects.map(p => (
-                <ProjectCard key={p.id} project={p} onSelect={() => onSelectProject(p)} />
+                <ProjectCard 
+                  key={p.id} 
+                  project={p} 
+                  onSelect={() => onSelectProject(p)} 
+                  onDelete={() => onDeleteProject(p.id)}
+                />
             ))}
             <CreateProjectCard onAddProject={onAddProject} />
         </div>

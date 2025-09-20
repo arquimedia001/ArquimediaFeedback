@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import type { Project, Design, Comment, NewComment } from './types';
 import { INITIAL_PROJECTS } from './constants';
@@ -12,27 +11,23 @@ const App: React.FC = () => {
   const [currentDesignId, setCurrentDesignId] = useState<string | null>(null);
 
   useEffect(() => {
+    // Per user request to "clean everything", we are resetting the application state
+    // by clearing any projects stored in localStorage on startup.
     try {
-      const storedProjects = localStorage.getItem('arquimedia_projects');
-      if (storedProjects) {
-        setProjects(JSON.parse(storedProjects));
-      } else {
-        setProjects(INITIAL_PROJECTS);
-      }
+      localStorage.removeItem('arquimedia_projects');
+      setProjects(INITIAL_PROJECTS); // INITIAL_PROJECTS is an empty array
     } catch (error) {
-      console.error("Failed to parse projects from localStorage", error);
+      console.error("Failed to clear projects from localStorage", error);
       setProjects(INITIAL_PROJECTS);
     }
   }, []);
 
   useEffect(() => {
-    if (projects.length > 0) {
-      try {
-        localStorage.setItem('arquimedia_projects', JSON.stringify(projects));
-      } catch (error) {
-        console.error("Failed to save projects to localStorage", error);
-        alert("Could not save project changes. Your browser's local storage might be full. Please try uploading smaller images.");
-      }
+    try {
+      localStorage.setItem('arquimedia_projects', JSON.stringify(projects));
+    } catch (error) {
+      console.error("Failed to save projects to localStorage", error);
+      alert("Could not save project changes. Your browser's local storage might be full. Please try uploading smaller images.");
     }
   }, [projects]);
   
@@ -119,6 +114,24 @@ const App: React.FC = () => {
     );
   }, [currentProjectId]);
 
+  const handleDeleteProject = useCallback((projectId: string) => {
+    setProjects(prevProjects => prevProjects.filter(p => p.id !== projectId));
+  }, []);
+
+  const handleDeleteDesign = useCallback((projectId: string, designId: string) => {
+    setProjects(prevProjects =>
+      prevProjects.map(p => {
+        if (p.id !== projectId) {
+          return p;
+        }
+        return {
+          ...p,
+          designs: p.designs.filter(d => d.id !== designId),
+        };
+      })
+    );
+  }, []);
+
 
   const handleBackToProjects = () => {
     setCurrentProjectId(null);
@@ -130,11 +143,22 @@ const App: React.FC = () => {
   }
 
   if (!currentProject) {
-    return <ProjectsScreen projects={projects} onAddProject={handleAddProject} onSelectProject={handleSelectProject} />;
+    return <ProjectsScreen 
+              projects={projects} 
+              onAddProject={handleAddProject} 
+              onSelectProject={handleSelectProject} 
+              onDeleteProject={handleDeleteProject}
+            />;
   }
 
   if (currentProject && !currentDesign) {
-    return <ProjectBoardsScreen project={currentProject} onSelectDesign={handleSelectDesign} onAddDesign={handleAddDesign} onBack={handleBackToProjects}/>;
+    return <ProjectBoardsScreen 
+              project={currentProject} 
+              onSelectDesign={handleSelectDesign} 
+              onAddDesign={handleAddDesign} 
+              onDeleteDesign={handleDeleteDesign}
+              onBack={handleBackToProjects}
+            />;
   }
 
   if (currentProject && currentDesign) {
